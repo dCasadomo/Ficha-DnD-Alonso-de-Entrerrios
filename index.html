@@ -226,6 +226,78 @@
     details:not([open]) .texto-mostrar { display:inline; }
 
     /* =========================================
+       ARMAS DESPLEGABLES (ACORDEÓN)
+    ========================================= */
+    .arma.arma-desplegable {
+      border: 1px solid var(--linea);
+      border-radius: 11px;
+      background: rgba(0,0,0,.15);
+      transition: background .2s ease, border-color .2s ease;
+      overflow: hidden;
+      padding: 0;
+    }
+    .arma.arma-desplegable:hover {
+      border-color: rgba(200, 160, 100, 0.45);
+    }
+    .arma-resumen {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 13px;
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+      transition: background .15s ease;
+    }
+    .arma-resumen::-webkit-details-marker { display: none; }
+    .arma-resumen::marker { display: none; }
+    .arma-resumen:hover {
+      background: rgba(255,255,255,.03);
+    }
+    .arma.arma-desplegable[open] .arma-resumen {
+      border-bottom: 1px solid rgba(200, 160, 100, 0.18);
+      background: rgba(0,0,0,.12);
+    }
+    .arma-resumen-izq {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .arma-resumen-der {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .arma-resumen-nombre {
+      font-size: .95rem;
+      color: var(--oro-claro);
+      letter-spacing: .02em;
+    }
+    .arma-tag-alcance {
+      font-size: .72rem;
+      color: var(--texto-suave);
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+    .arma-resumen-bono {
+      font-size: .76rem;
+      padding: 3px 8px;
+    }
+    .boton-ataque-rapido {
+      padding: 4px 10px !important;
+      font-size: .75rem !important;
+      letter-spacing: .02em;
+    }
+    .arma-cuerpo {
+      padding: 13px;
+    }
+
+    /* =========================================
        BANDEJA DE DADOS 3D Y REGISTRO DE TIRADAS
        ========================================= */
     .bandeja-dados {
@@ -748,7 +820,17 @@
         </section>
 
         <section class="seccion panel">
-          <div class="cabecera-seccion"><div><h2>Arsenal y tiradas</h2><p class="subtitulo">Elige un objetivo, pulsa atacar y la ficha suma competencia, atributo y daño.</p></div><button class="boton-secundario" id="anadir-arma" type="button">+ Arma</button></div>
+          <div class="cabecera-seccion">
+            <div>
+              <h2>Arsenal y tiradas</h2>
+              <p class="subtitulo">Elige un objetivo, pulsa atacar y la ficha suma competencia, atributo y daño.</p>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <button class="boton-secundario" id="plegar-armas" type="button" title="Plegar todas las armas" style="font-size:.74rem;padding:5px 9px">Plegar todas</button>
+              <button class="boton-secundario" id="desplegar-armas" type="button" title="Desplegar todas las armas" style="font-size:.74rem;padding:5px 9px">Desplegar todas</button>
+              <button class="boton-secundario" id="anadir-arma" type="button">+ Arma</button>
+            </div>
+          </div>
           <div class="control" style="max-width:230px;margin-bottom:12px"><label class="etiqueta" for="ca-objetivo">Clase de armadura del objetivo</label><input id="ca-objetivo" type="number" min="0" value="15"></div>
           <div class="arma-acciones" style="margin-bottom:12px">
             <label class="fila-checkbox"><input id="ventaja" type="checkbox"> Ventaja</label>
@@ -1183,7 +1265,51 @@
       function bonoArma(a) { return modA(a.ataqueAtributo||a.atributo)+(a.competente?pb():0)+Number(a.bonoAtaque||0); }
       function bonoDano(a) { return modA(a.atributo)+Number(a.bonoDaño||0); }
       function renderArmas() {
-        document.getElementById('armas').innerHTML=S.armas.map(function(a,i){return '<article class="arma" data-arma-card="'+i+'"><div class="arma-cabecera"><div class="campo"><label>Arma / ataque</label><input data-arma="'+i+'" data-prop="nombre" value="'+esc(a.nombre)+'" aria-label="Nombre del arma"></div><div class="campo"><label>Atributo</label><select data-arma="'+i+'" data-prop="atributo" aria-label="Atributo del daño">'+atributosBase.slice(0,3).map(function(at){return '<option value="'+at.clave+'" '+(a.atributo===at.clave?'selected':'')+'>'+at.nombre+'</option>';}).join('')+'</select></div><div class="campo"><label>Daño en dados</label><input data-arma="'+i+'" data-prop="dados" value="'+esc(a.dados)+'" aria-label="Dados de daño"></div><div class="campo"><label>Tipo de daño</label><input data-arma="'+i+'" data-prop="tipo" value="'+esc(a.tipo)+'" aria-label="Tipo de daño"></div><button class="boton-icono" type="button" data-borrar-arma="'+i+'" aria-label="Eliminar '+esc(a.nombre)+'">Eliminar</button></div><div class="arma-datos"><span>Alcance: <strong>'+esc(a.alcance)+'</strong></span><span class="rasgo">'+esc(a.propiedades)+'</span><span>Maestría: <strong>'+esc(a.maestria||'—')+'</strong></span><label class="fila-checkbox"><input type="checkbox" data-arma="'+i+'" data-prop="competente" '+(a.competente?'checked':'')+'> Competente</label></div><div class="arma-acciones"><span class="bono-ataque" id="bono-arma-'+i+'">Ataque '+firmado(bonoArma(a))+' · Daño '+esc(a.dados)+' '+firmado(bonoDano(a))+'</span><button class="boton principal" type="button" data-atacar="'+i+'">Atacar y calcular daño</button><button class="boton-secundario" type="button" data-solo-dano="'+i+'">Tirar daño</button><button class="boton-secundario" type="button" data-editar-arma="'+i+'">Editar</button></div><div class="campo" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px"><div><label>Bono al ataque</label><input type="number" data-arma="'+i+'" data-prop="bonoAtaque" value="'+esc(a.bonoAtaque||0)+'"></div><div><label>Bono extra al daño</label><input type="number" data-arma="'+i+'" data-prop="bonoDaño" value="'+esc(a.bonoDaño||0)+'"></div></div></article>';}).join('');
+        document.getElementById('armas').innerHTML = S.armas.map(function(a, i) {
+          var estaAbierta = (a.abierta !== undefined) ? a.abierta : (i === 0 || i === 1);
+          var tagInfo = esc(a.alcance || '5 pies') + (a.maestria ? ' · ' + esc(a.maestria) : '');
+          return '<details class="arma arma-desplegable" data-arma-card="' + i + '" ' + (estaAbierta ? 'open' : '') + '>' +
+            '<summary class="arma-resumen" role="button" aria-label="Plegar o desplegar ' + esc(a.nombre) + '">' +
+              '<div class="arma-resumen-izq">' +
+                '<span class="indicador-desplegable" aria-hidden="true">▼</span>' +
+                '<strong class="arma-resumen-nombre" id="nombre-resumen-arma-' + i + '">' + esc(a.nombre) + '</strong>' +
+                '<span class="arma-tag-alcance">' + tagInfo + '</span>' +
+              '</div>' +
+              '<div class="arma-resumen-der">' +
+                '<span class="bono-ataque arma-resumen-bono" id="bono-resumen-arma-' + i + '">Ataque ' + firmado(bonoArma(a)) + ' · Daño ' + esc(a.dados) + ' ' + firmado(bonoDano(a)) + '</span>' +
+                '<button class="boton principal boton-ataque-rapido" type="button" data-atacar="' + i + '" title="Atacar directamente sin desplegar">Atacar</button>' +
+                '<span class="boton-secundario boton-desplegar-badge" style="font-size:.7rem;padding:3px 8px;cursor:pointer">' +
+                  '<span class="texto-ocultar">Ocultar</span><span class="texto-mostrar">Desplegar</span>' +
+                '</span>' +
+              '</div>' +
+            '</summary>' +
+            '<div class="arma-cuerpo">' +
+              '<div class="arma-cabecera">' +
+                '<div class="campo"><label>Arma / ataque</label><input data-arma="' + i + '" data-prop="nombre" value="' + esc(a.nombre) + '" aria-label="Nombre del arma"></div>' +
+                '<div class="campo"><label>Atributo</label><select data-arma="' + i + '" data-prop="atributo" aria-label="Atributo del daño">' + atributosBase.slice(0,3).map(function(at){return '<option value="' + at.clave + '" ' + (a.atributo === at.clave ? 'selected' : '') + '>' + at.nombre + '</option>';}).join('') + '</select></div>' +
+                '<div class="campo"><label>Daño en dados</label><input data-arma="' + i + '" data-prop="dados" value="' + esc(a.dados) + '" aria-label="Dados de daño"></div>' +
+                '<div class="campo"><label>Tipo de daño</label><input data-arma="' + i + '" data-prop="tipo" value="' + esc(a.tipo) + '" aria-label="Tipo de daño"></div>' +
+                '<button class="boton-icono" type="button" data-borrar-arma="' + i + '" aria-label="Eliminar ' + esc(a.nombre) + '">Eliminar</button>' +
+              '</div>' +
+              '<div class="arma-datos">' +
+                '<span>Alcance: <strong>' + esc(a.alcance) + '</strong></span>' +
+                '<span class="rasgo">' + esc(a.propiedades) + '</span>' +
+                '<span>Maestría: <strong>' + esc(a.maestria || '—') + '</strong></span>' +
+                '<label class="fila-checkbox"><input type="checkbox" data-arma="' + i + '" data-prop="competente" ' + (a.competente ? 'checked' : '') + '> Competente</label>' +
+              '</div>' +
+              '<div class="arma-acciones">' +
+                '<span class="bono-ataque" id="bono-arma-' + i + '">Ataque ' + firmado(bonoArma(a)) + ' · Daño ' + esc(a.dados) + ' ' + firmado(bonoDano(a)) + '</span>' +
+                '<button class="boton principal" type="button" data-atacar="' + i + '">Atacar y calcular daño</button>' +
+                '<button class="boton-secundario" type="button" data-solo-dano="' + i + '">Tirar daño</button>' +
+                '<button class="boton-secundario" type="button" data-editar-arma="' + i + '">Editar</button>' +
+              '</div>' +
+              '<div class="campo" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px">' +
+                '<div><label>Bono al ataque</label><input type="number" data-arma="' + i + '" data-prop="bonoAtaque" value="' + esc(a.bonoAtaque || 0) + '"></div>' +
+                '<div><label>Bono extra al daño</label><input type="number" data-arma="' + i + '" data-prop="bonoDaño" value="' + esc(a.bonoDaño || 0) + '"></div>' +
+              '</div>' +
+            '</div>' +
+          '</details>';
+        }).join('');
       }
       function renderMaestrias() {
         document.getElementById('maestrias').innerHTML=S.maestrias.map(function(m){return '<div class="maestria"><strong>'+esc(m.arma)+' · '+esc(m.efecto.split(':')[0])+'</strong><span>'+esc(m.efecto)+'</span></div>';}).join('');
@@ -1234,7 +1360,11 @@
         var percep=S.habilidades.find(function(h){return h.nombre.toLowerCase()==='percepción';}); document.getElementById('percepcion-pasiva').textContent=10+(percep?modA(percep.atributo)+(percep.entrenada?pb():0):0);
         document.getElementById('barra-pg').style.width=Math.max(0,Math.min(100,(Number(S.pg)/Math.max(1,Number(S.pgMax)))*100))+'%';
         document.getElementById('dados-golpe-total').textContent=S.nivel;
-        S.armas.forEach(function(a,i){var el=document.getElementById('bono-arma-'+i); if(el) el.textContent='Ataque '+firmado(bonoArma(a))+' · Daño '+a.dados+' '+firmado(bonoDano(a));});
+        S.armas.forEach(function(a,i){
+          var el=document.getElementById('bono-arma-'+i); if(el) el.textContent='Ataque '+firmado(bonoArma(a))+' · Daño '+a.dados+' '+firmado(bonoDano(a));
+          var resBono=document.getElementById('bono-resumen-arma-'+i); if(resBono) resBono.textContent='Ataque '+firmado(bonoArma(a))+' · Daño '+a.dados+' '+firmado(bonoDano(a));
+          var resNom=document.getElementById('nombre-resumen-arma-'+i); if(resNom) resNom.textContent=a.nombre;
+        });
       }
       function renderTodo() { actualizarTodo(); }
       function establecer(obj, ruta, valor) { var partes=ruta.split('.'), actual=obj; for(var i=0;i<partes.length-1;i++) actual=actual[partes[i]]; actual[partes[partes.length-1]]=valor; }
@@ -1563,8 +1693,8 @@
         var t=e.target.closest('button');if(!t)return;
         if(t.dataset.pg){curar(Number(t.dataset.pg));}
         if(t.dataset.recurso){var key=t.dataset.recurso, change=Number(t.dataset.cambio), max=Number(S.usos[key+'Max']); S.usos[key]=Math.max(0,Math.min(max,Number(S.usos[key])+change)); renderRecursos(); guardar(true);}
-        if(t.dataset.atacar!==undefined)tirarArma(Number(t.dataset.atacar),false);
-        if(t.dataset.soloDano!==undefined)tirarArma(Number(t.dataset.soloDano),true);
+        if(t.dataset.atacar!==undefined){ if(t.closest('summary')) e.preventDefault(); tirarArma(Number(t.dataset.atacar),false); }
+        if(t.dataset.soloDano!==undefined){ if(t.closest("summary")) e.preventDefault(); tirarArma(Number(t.dataset.soloDano),true); }
         if(t.dataset.editarArma!==undefined)rellenarArmaForm(Number(t.dataset.editarArma));
         if(t.dataset.borrarArma!==undefined){var iw=Number(t.dataset.borrarArma);if(confirm('¿Retirar '+S.armas[iw].nombre+' del arsenal?')){S.armas.splice(iw,1);renderArmas();actualizarDerivados();guardar(true);}}
         if(t.dataset.usarManiobra!==undefined){var r=gastarDado(S.usos.superioridadCara);if(r!==null){var mn=S.maniobras[Number(t.dataset.usarManiobra)];var resM='Maniobra <strong>'+esc(mn.nombre)+'</strong>: dado de superioridad d'+S.usos.superioridadCara+' = <strong>'+r+'</strong>. Aplica el resultado a la maniobra.';ejecutarTiradaConAnimacion([{caras:S.usos.superioridadCara,valor:r,etiqueta:'d'+S.usos.superioridadCara+' Maniobra'}],'Maniobra · '+mn.nombre,resM,{titulo:'Maniobra · '+mn.nombre,tipo:'exito',etiquetaTag:'d'+S.usos.superioridadCara+' = '+r,cuerpoHTML:'Dado de superioridad: <strong>'+r+'</strong>. '+esc(mn.descripcion)});
@@ -1585,6 +1715,36 @@
       document.getElementById('editar-maestrias').addEventListener('click',function(){document.getElementById('edit-maestrias-texto').value=S.maestrias.map(function(m){return m.arma+' — '+m.efecto;}).join('\n');dialogo('dialogo-maestrias');});
       document.getElementById('aplicar-maestrias').addEventListener('click',function(e){e.preventDefault();S.maestrias=document.getElementById('edit-maestrias-texto').value.split('\n').map(function(linea){var p=linea.split('—');return {arma:(p.shift()||'').trim(),efecto:p.join('—').trim()};}).filter(function(x){return x.arma;});renderMaestrias();guardar(true);document.getElementById('dialogo-maestrias').close();});
       document.getElementById('anadir-arma').addEventListener('click',function(){rellenarArmaForm(-1);});
+      var btnPlegarArmas = document.getElementById('plegar-armas');
+      if (btnPlegarArmas) {
+        btnPlegarArmas.addEventListener('click', function() {
+          document.querySelectorAll('#armas details.arma').forEach(function(el, idx) {
+            el.removeAttribute('open');
+            if (S.armas[idx]) S.armas[idx].abierta = false;
+          });
+          guardar(true);
+        });
+      }
+      var btnDesplegarArmas = document.getElementById('desplegar-armas');
+      if (btnDesplegarArmas) {
+        btnDesplegarArmas.addEventListener('click', function() {
+          document.querySelectorAll('#armas details.arma').forEach(function(el, idx) {
+            el.setAttribute('open', '');
+            if (S.armas[idx]) S.armas[idx].abierta = true;
+          });
+          guardar(true);
+        });
+      }
+      document.getElementById('armas').addEventListener('toggle', function(e) {
+        var det = e.target.closest('details.arma');
+        if (det && det.dataset.armaCard !== undefined) {
+          var idx = Number(det.dataset.armaCard);
+          if (S.armas[idx]) {
+            S.armas[idx].abierta = det.hasAttribute('open');
+            guardar(true);
+          }
+        }
+      }, true);
       document.getElementById('guardar-arma').addEventListener('click',function(e){e.preventDefault();guardarArma();});
       document.getElementById('anadir-maniobra').addEventListener('click',function(){document.getElementById('titulo-dialogo-maniobra').textContent='Añadir maniobra';document.getElementById('maniobra-edicion-indice').value=-1;document.getElementById('nueva-maniobra-nombre').value='';document.getElementById('nueva-maniobra-descripcion').value='';document.getElementById('nueva-maniobra-origen').value='Clase';dialogo('dialogo-maniobra');});
       document.getElementById('guardar-maniobra').addEventListener('click',function(e){e.preventDefault();guardarManiobra();});
