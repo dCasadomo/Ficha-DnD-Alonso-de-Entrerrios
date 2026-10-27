@@ -225,6 +225,10 @@
     details:not([open]) .texto-ocultar { display:none; }
     details:not([open]) .texto-mostrar { display:inline; }
 
+    #restablecer-btn-top:hover, #restablecer-btn:hover {
+      border-color: #d9776b !important;
+      color: #ffc2b8 !important;
+    }
     /* =========================================
        ARMAS DESPLEGABLES (ACORDEÓN)
     ========================================= */
@@ -766,6 +770,7 @@
       <div class="marca"><span class="sello" aria-hidden="true">✠</span><span>Libro de armas<br><small style="color:#a99c86;letter-spacing:.1em">Edición de campaña · 2024</small></span></div>
       <nav class="mast-acciones" aria-label="Acciones de la ficha">
         <button class="boton-secundario" id="guardar-btn" type="button">Guardar cambios</button>
+        <button class="boton-secundario" id="restablecer-btn-top" type="button" title="Restablecer la ficha a los valores originales de fábrica">↺ Restablecer</button>
         <button class="boton-secundario" id="exportar-btn" type="button">Exportar ficha</button>
         <button class="boton-secundario" id="importar-btn" type="button">Importar ficha</button>
         <button class="boton principal" id="compartir-btn" type="button">Compartir ficha</button>
@@ -942,6 +947,10 @@
             <div class="campo"><label for="atributo-cd">Atributo para maniobras</label><select id="atributo-cd"><option value="FUE">Fuerza</option><option value="DES">Destreza</option></select></div>
           </div>
           <div class="campo" style="margin-top:9px"><label for="nivel">Nivel de Guerrero</label><input id="nivel" type="number" min="1" max="20" value="5"></div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(226,196,135,.12)">
+            <button class="boton-secundario" id="restablecer-btn" type="button" style="width:100%;color:#e28f82;border-color:rgba(226,95,79,.3)" title="Restablecer todos los datos a los valores iniciales de fábrica">↺ Restablecer ficha original</button>
+            <p class="subtitulo" style="margin:6px 0 0;font-size:.72rem">Restaura todas las estadísticas, armas y textos iniciales por si se ha modificado algo por error.</p>
+          </div>
         </section>
       </aside>
     </div>
@@ -1221,10 +1230,22 @@
       var notificacion = document.getElementById('notificacion');
       var temporizadorAviso;
       function clonar(obj) { return JSON.parse(JSON.stringify(obj)); }
+      function asegurarHabilidadesBasicas(estado) {
+        if (!estado || !Array.isArray(estado.habilidades)) return estado;
+        habilidadesBase.forEach(function(hb) {
+          var existe = estado.habilidades.some(function(h) {
+            return h && h.nombre && h.nombre.toLowerCase() === hb.nombre.toLowerCase();
+          });
+          if (!existe) {
+            estado.habilidades.push(clonar(hb));
+          }
+        });
+        return estado;
+      }
       function cargarEstado() {
         var compartido = leerFragmento();
-        if (compartido) return fusionar(clonar(inicial), compartido);
-        try { var guardado = localStorage.getItem(CLAVE); if (guardado) return fusionar(clonar(inicial), JSON.parse(guardado)); } catch (e) {}
+        if (compartido) return asegurarHabilidadesBasicas(fusionar(clonar(inicial), compartido));
+        try { var guardado = localStorage.getItem(CLAVE); if (guardado) return asegurarHabilidadesBasicas(fusionar(clonar(inicial), JSON.parse(guardado))); } catch (e) {}
         return clonar(inicial);
       }
       function fusionar(base, datos) {
@@ -1260,7 +1281,22 @@
         document.getElementById('salvaciones').innerHTML=atributosBase.map(function(a){return '<label class="salvacion"><input type="checkbox" data-salvacion="'+a.clave+'" '+(S.salvaciones[a.clave]?'checked':'')+'><span class="tirar-clic" data-tirar-salvacion="'+a.clave+'" title="Clic para tirar salvación de '+a.nombre+'">'+a.clave+'</span><strong class="tirar-clic" id="salv-'+a.clave+'" data-tirar-salvacion="'+a.clave+'" title="Clic para tirar salvación de '+a.nombre+'">'+firmado(modA(a.clave)+(S.salvaciones[a.clave]?pb():0))+'</strong></label>';}).join('');
       }
       function renderHabilidades() {
-        document.getElementById('habilidades').innerHTML=S.habilidades.map(function(h,i){return '<div class="habilidad"><input type="checkbox" data-habilidad-entrenada="'+i+'" '+(h.entrenada?'checked':'')+' aria-label="Competencia en '+esc(h.nombre)+'"><label class="tirar-clic" data-tirar-habilidad="'+i+'" title="Clic para tirar prueba de '+esc(h.nombre)+'">'+esc(h.nombre)+'</label><strong class="total-habilidad tirar-clic" id="habilidad-total-'+i+'" data-tirar-habilidad="'+i+'" title="Clic para tirar prueba de '+esc(h.nombre)+'">'+firmado(modA(h.atributo)+(h.entrenada?pb():0))+'</strong><select data-habilidad-atributo="'+i+'" aria-label="Atributo para '+esc(h.nombre)+'">'+atributosBase.map(function(a){return '<option value="'+a.clave+'" '+(h.atributo===a.clave?'selected':'')+'>'+a.clave+'</option>';}).join('')+'</select><button type="button" class="borrar-habilidad" data-borrar-habilidad="'+i+'" aria-label="Eliminar habilidad">×</button></div>';}).join('');
+        var nombresBasicas = habilidadesBase.map(function(hb){ return hb.nombre.toLowerCase(); });
+        document.getElementById('habilidades').innerHTML = S.habilidades.map(function(h, i) {
+          var esBasica = nombresBasicas.indexOf((h.nombre || '').toLowerCase()) !== -1;
+          var botonBorrar = !esBasica
+            ? '<button type="button" class="borrar-habilidad" data-borrar-habilidad="' + i + '" aria-label="Eliminar ' + esc(h.nombre) + '" title="Eliminar habilidad personalizada">×</button>'
+            : '<span class="espacio-borrar" aria-hidden="true"></span>';
+          return '<div class="habilidad">' +
+            '<input type="checkbox" data-habilidad-entrenada="' + i + '" ' + (h.entrenada ? 'checked' : '') + ' aria-label="Competencia en ' + esc(h.nombre) + '">' +
+            '<label class="tirar-clic" data-tirar-habilidad="' + i + '" title="Clic para tirar prueba de ' + esc(h.nombre) + '">' + esc(h.nombre) + '</label>' +
+            '<strong class="total-habilidad tirar-clic" id="habilidad-total-' + i + '" data-tirar-habilidad="' + i + '" title="Clic para tirar prueba de ' + esc(h.nombre) + '">' + firmado(modA(h.atributo) + (h.entrenada ? pb() : 0)) + '</strong>' +
+            '<select data-habilidad-atributo="' + i + '" aria-label="Atributo para ' + esc(h.nombre) + '">' +
+              atributosBase.map(function(a){return '<option value="' + a.clave + '" ' + (h.atributo === a.clave ? 'selected' : '') + '>' + a.clave + '</option>';}).join('') +
+            '</select>' +
+            botonBorrar +
+          '</div>';
+        }).join('');
       }
       function bonoArma(a) { return modA(a.ataqueAtributo||a.atributo)+(a.competente?pb():0)+Number(a.bonoAtaque||0); }
       function bonoDano(a) { return modA(a.atributo)+Number(a.bonoDaño||0); }
@@ -1701,9 +1737,37 @@
 }}
         if(t.dataset.editarManiobra!==undefined){var im=Number(t.dataset.editarManiobra),m=S.maniobras[im];document.getElementById('titulo-dialogo-maniobra').textContent='Editar maniobra';document.getElementById('maniobra-edicion-indice').value=im;document.getElementById('nueva-maniobra-nombre').value=m.nombre;document.getElementById('nueva-maniobra-descripcion').value=m.descripcion;document.getElementById('nueva-maniobra-origen').value=m.origen;dialogo('dialogo-maniobra');}
         if(t.dataset.borrarManiobra!==undefined){var im2=Number(t.dataset.borrarManiobra);if(confirm('¿Eliminar la maniobra '+S.maniobras[im2].nombre+'?')){S.maniobras.splice(im2,1);renderManiobras();guardar(true);}}
-        if(t.dataset.borrarHabilidad!==undefined){var ih=Number(t.dataset.borrarHabilidad);S.habilidades.splice(ih,1);renderHabilidades();actualizarDerivados();guardar(true);}
+        if (t.dataset.borrarHabilidad !== undefined) {
+          var ih = Number(t.dataset.borrarHabilidad);
+          var habObj = S.habilidades[ih];
+          var nombresBasicas = habilidadesBase.map(function(hb){ return hb.nombre.toLowerCase(); });
+          if (habObj && nombresBasicas.indexOf((habObj.nombre || '').toLowerCase()) !== -1) {
+            avisar('Las habilidades básicas de D&D no se pueden eliminar.');
+            return;
+          }
+          S.habilidades.splice(ih, 1);
+          renderHabilidades();
+          actualizarDerivados();
+          guardar(true);
+        }
         if(t.dataset.borrarEstado!==undefined){var ie=Number(t.dataset.borrarEstado);S.estados.splice(ie,1);renderEstados();guardar(true);}
       });
+      function restablecerFicha() {
+        if (!confirm('¿Seguro que quieres restablecer la ficha a sus valores originales de nivel 5?\n\nSe borrarán los cambios guardados en este navegador y volverá a su estado inicial de fábrica.')) {
+          return;
+        }
+        try { localStorage.removeItem(CLAVE); } catch(e) {}
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+        }
+        S = clonar(inicial);
+        actualizarTodo();
+        avisar('Ficha restablecida con éxito a sus valores iniciales.');
+      }
+      var btnRestablecerTop = document.getElementById('restablecer-btn-top');
+      if (btnRestablecerTop) btnRestablecerTop.addEventListener('click', restablecerFicha);
+      var btnRestablecer = document.getElementById('restablecer-btn');
+      if (btnRestablecer) btnRestablecer.addEventListener('click', restablecerFicha);
       document.getElementById('guardar-btn').addEventListener('click',function(){guardar(false);});
       document.getElementById('imprimir-btn').addEventListener('click',function(){window.print();});
       document.getElementById('exportar-btn').addEventListener('click',exportar);
